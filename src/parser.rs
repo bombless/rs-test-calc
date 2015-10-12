@@ -1,6 +1,6 @@
 
 use data::*;
-fn parse_number(s: &mut TwoWay<Token>) -> Option<u8> {
+fn parse_number(s: &mut TwoWay<Token>) -> Option<u64> {
     let ptr = s.pos();
     if let Some(Token::Number(x)) = s.read() {
         Some(x)
@@ -72,4 +72,11 @@ fn parse_term(s: &mut TwoWay<Token>) -> Option<Term> {
     None
 }
 
-pub fn parse(s: &mut TwoWay<Token>) -> Option<Term> { parse_term(s) }
+pub fn parse(s: &mut TwoWay<Token>) -> Result<Term, ()> {
+    if let Some(r) = parse_term(s) {
+        if s.end() {
+            return Ok(r)
+        }
+    }
+    Err(())
+}

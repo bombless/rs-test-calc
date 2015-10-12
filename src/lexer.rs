@@ -1,6 +1,6 @@
 
 use data::*;
-pub fn read(s: &mut TwoWay<char>) -> Vec<Token> {
+pub fn read(s: &mut TwoWay<char>) -> Result<Vec<Token>, ()> {
     let mut v = Vec::new();
     while true {
         if let Some(x) = parse_number(s) {
@@ -15,12 +15,19 @@ pub fn read(s: &mut TwoWay<char>) -> Vec<Token> {
             v.push(Token::Mul);
             continue
         }
+        if parse_whitespace(s).is_some() {
+            continue
+        }
         break
     }
-    v
+    if s.end() {
+        Ok(v)
+    } else {
+        Err(())
+    }
 }
 
-fn parse_number(s: &mut TwoWay<char>) -> Option<u8> {
+fn parse_number(s: &mut TwoWay<char>) -> Option<u64> {
     let ptr = s.pos();
     let mut num = None;
     while let Some(c) = s.read() {
@@ -29,8 +36,7 @@ fn parse_number(s: &mut TwoWay<char>) -> Option<u8> {
                 s.set(ptr);
                 return None
             },
-            '0' ... '9' => num = Some((c as u8) - b'0' + num.unwrap_or(0) * 10),
-            ' ' | '\t' | '\n' | '\r' => {},
+            '0' ... '9' => num = Some((c as u64) - b'0' as u64 + num.unwrap_or(0) * 10),
             _ => {
                 let last = s.pos() - 1;
                 s.set(last);
@@ -61,5 +67,13 @@ fn parse_mul(s: &mut TwoWay<char>) -> Option<()> {
     } else {
         s.set(ptr);
         None
+    }
+}
+
+fn parse_whitespace(s: &mut TwoWay<char>) -> Option<()> {
+    let ptr = s.pos();
+    match s.read() {
+        Some(' ') | Some('\t') | Some('\n') | Some('\r') => Some(()),
+        _ => { s.set(ptr); None }
     }
 }
