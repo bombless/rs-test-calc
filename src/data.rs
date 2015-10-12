@@ -8,21 +8,25 @@ pub struct TwoWay<T> {
 }
 
 #[derive(Debug)]
-pub struct Factor {
-    pub left: u64,
-    pub right: Option<Box<Factor>>,
+pub struct Bin<Left, Right> {
+    pub left: Left,
+    pub right: Option<Box<Right>>,
 }
 
 #[derive(Debug)]
-pub struct Term {
-    pub left: Factor,
-    pub right: Option<Box<Term>>,
+pub struct Factor (pub Bin<i64, Factor>);
+
+#[derive(Debug)]
+pub enum Term {
+    Plus(Bin<Factor, Term>),
+    Minus(Bin<Factor, Term>),
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum Token {
-    Number(u64),
+    Number(i64),
     Plus,
+    Minus,
     Mul,
 }
 
@@ -46,39 +50,50 @@ impl<T: Copy> TwoWay<T> {
 
 
 impl Factor {
-    pub fn calc(&self) -> u64 {
-        match self.right.as_ref() {
-            Some(x) => self.left * x.calc(),
-            None => self.left
+    pub fn calc(&self) -> i64 {
+        match self.0.right.as_ref() {
+            Some(x) => self.0.left * x.calc(),
+            None => self.0.left
         }
     }
 }
 
 impl Term {
-    pub fn calc(&self) -> u64 {
-        match self.right.as_ref() {
-            Some(x) => self.left.calc() + x.calc(),
-            None => self.left.calc()
+    pub fn calc(&self) -> i64 {
+        match *self {
+            Term::Plus(Bin {left: ref l, right: Some(ref r) }) => l.calc() + r.calc(),
+            Term::Minus(Bin {left: ref l, right: Some(ref r) }) => l.calc() - r.calc(),
+            Term::Plus(Bin {left: ref l, right: None }) |
+            Term::Minus(Bin {left: ref l, right: None }) => l.calc()
         }
     }
 }
 
 impl Display for Factor {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
-        if let Some(ref r) = self.right {
-            write!(f, "{} * {}", self.left, r)
+        if let Some(ref r) = self.0.right {
+            write!(f, "{} * {}", self.0.left, r)
         } else {
-            write!(f, "{}", self.left)
+            write!(f, "{}", self.0.left)
         }
     }
 }
 
 impl Display for Term {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
-        if let Some(ref r) = self.right {
-            write!(f, "{} + {}", self.left, r)
-        } else {
-            write!(f, "{}", self.left)
+        match *self {
+            Term::Plus(Bin { left: ref l, right: Some(ref r)}) => {
+                write!(f, "{} + {}", l, r)
+            }
+            Term::Minus(Bin { left: ref l, right: Some(ref r)}) => {
+                write!(f, "{} - {}", l, r)
+            }
+            Term::Plus(Bin { left: ref l, right: None }) => {
+                write!(f, "{}", l)
+            }
+            Term::Minus(Bin { left: ref l, right: None }) => {
+                write!(f, "{}", l)
+            }
         }
     }
 }

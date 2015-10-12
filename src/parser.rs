@@ -1,6 +1,6 @@
 
 use data::*;
-fn parse_number(s: &mut TwoWay<Token>) -> Option<u64> {
+fn parse_number(s: &mut TwoWay<Token>) -> Option<i64> {
     let ptr = s.pos();
     if let Some(Token::Number(x)) = s.read() {
         Some(x)
@@ -13,6 +13,16 @@ fn parse_number(s: &mut TwoWay<Token>) -> Option<u64> {
 fn parse_plus(s: &mut TwoWay<Token>) -> Option<()> {
     let ptr = s.pos();
     if let Some(Token::Plus) = s.read() {
+        Some(())
+    } else {
+        s.set(ptr);
+        None
+    }
+}
+
+fn parse_minus(s: &mut TwoWay<Token>) -> Option<()> {
+    let ptr = s.pos();
+    if let Some(Token::Minus) = s.read() {
         Some(())
     } else {
         s.set(ptr);
@@ -35,16 +45,16 @@ fn parse_factor(s: &mut TwoWay<Token>) -> Option<Factor> {
     if let Some(l) = parse_number(s) {
         if parse_mul(s).is_some() {
             if let Some(r) = parse_factor(s) {
-                return Some(Factor {
+                return Some(Factor(Bin {
                     left: l,
                     right: Some(Box::new(r)),
-                })
+                }))
             }
         } else {
-            return Some(Factor {
+            return Some(Factor(Bin {
                 left: l,
                 right: None,
-            })
+            }))
         }
     }
     s.set(ptr);
@@ -56,16 +66,23 @@ fn parse_term(s: &mut TwoWay<Token>) -> Option<Term> {
     if let Some(l) = parse_factor(s) {
         if parse_plus(s).is_some() {
             if let Some(r) = parse_term(s) {
-                return Some(Term {
+                return Some(Term::Plus(Bin {
                     left: l,
                     right: Some(Box::new(r)),
-                })
+                }))
+            }
+        }else if parse_minus(s).is_some() {
+            if let Some(r) = parse_term(s) {
+                return Some(Term::Minus(Bin {
+                    left: l,
+                    right: Some(Box::new(r)),
+                }))
             }
         } else {
-            return Some(Term {
+            return Some(Term::Plus(Bin {
                 left: l,
                 right: None,
-            })
+            }))
         }
     }
     s.set(ptr);

@@ -11,6 +11,10 @@ pub fn read(s: &mut TwoWay<char>) -> Result<Vec<Token>, ()> {
             v.push(Token::Plus);
             continue
         }
+        if parse_minus(s).is_some() {
+            v.push(Token::Minus);
+            continue
+        }
         if parse_mul(s).is_some() {
             v.push(Token::Mul);
             continue
@@ -27,7 +31,7 @@ pub fn read(s: &mut TwoWay<char>) -> Result<Vec<Token>, ()> {
     }
 }
 
-fn parse_number(s: &mut TwoWay<char>) -> Option<u64> {
+fn parse_number(s: &mut TwoWay<char>) -> Option<i64> {
     let ptr = s.pos();
     let mut num = None;
     while let Some(c) = s.read() {
@@ -36,7 +40,7 @@ fn parse_number(s: &mut TwoWay<char>) -> Option<u64> {
                 s.set(ptr);
                 return None
             },
-            '0' ... '9' => num = Some((c as u64) - b'0' as u64 + num.unwrap_or(0) * 10),
+            '0' ... '9' => num = Some((c as i64) - b'0' as i64 + num.unwrap_or(0) * 10),
             _ => {
                 let last = s.pos() - 1;
                 s.set(last);
@@ -53,6 +57,17 @@ fn parse_plus(s: &mut TwoWay<char>) -> Option<()> {
     let ptr = s.pos();
     let x = s.read();
     if let Some('+') = x {
+        Some(())
+    } else {
+        s.set(ptr);
+        None
+    }
+}
+
+fn parse_minus(s: &mut TwoWay<char>) -> Option<()> {
+    let ptr = s.pos();
+    let x = s.read();
+    if let Some('-') = x {
         Some(())
     } else {
         s.set(ptr);
