@@ -31,9 +31,10 @@ pub fn read(s: &mut TwoWay<char>) -> Result<Vec<Token>, ()> {
     }
 }
 
-fn parse_number(s: &mut TwoWay<char>) -> Option<i64> {
+fn parse_number(s: &mut TwoWay<char>) -> Option<Num> {
     let ptr = s.pos();
     let mut num = None;
+    let mut neg = 0;
     while let Some(c) = s.read() {
         match c {
             '0' ... '9' if num == Some(0) => {
@@ -41,6 +42,7 @@ fn parse_number(s: &mut TwoWay<char>) -> Option<i64> {
                 return None
             },
             '0' ... '9' => num = Some((c as i64) - b'0' as i64 + num.unwrap_or(0) * 10),
+            '-' if num == None => neg += 1,
             _ => {
                 let last = s.pos() - 1;
                 s.set(last);
@@ -50,7 +52,7 @@ fn parse_number(s: &mut TwoWay<char>) -> Option<i64> {
 
     }
     if num.is_none() { s.set(ptr) }
-    num
+    num.map(|x| Num { num: x, neg: neg })
 }
 
 fn parse_plus(s: &mut TwoWay<char>) -> Option<()> {

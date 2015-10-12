@@ -1,6 +1,6 @@
 
 use data::*;
-fn parse_number(s: &mut TwoWay<Token>) -> Option<i64> {
+fn parse_number(s: &mut TwoWay<Token>) -> Option<Num> {
     let ptr = s.pos();
     if let Some(Token::Number(x)) = s.read() {
         Some(x)
@@ -71,19 +71,34 @@ fn parse_term(s: &mut TwoWay<Token>) -> Option<Term> {
                     right: Some(Box::new(r)),
                 }))
             }
-        }else if parse_minus(s).is_some() {
+        }
+        if parse_minus(s).is_some() {
             if let Some(r) = parse_term(s) {
                 return Some(Term::Minus(Bin {
                     left: l,
                     right: Some(Box::new(r)),
                 }))
             }
-        } else {
-            return Some(Term::Plus(Bin {
-                left: l,
-                right: None,
-            }))
         }
+        match parse_number(s) {
+            Some(mut r) if r.neg > 0 => {
+                return Some(Term::Minus(Bin {
+                    left: l,
+                    right: Some(Box::new(Term::Minus(Bin {
+                        left: {
+                            r.neg -= 1;
+                            Factor(Bin { left: r, right: None })
+                        },
+                        right: None
+                    }))),
+                }))
+            },
+            _ => ()
+        }
+        return Some(Term::Plus(Bin {
+            left: l,
+            right: None,
+        }))
     }
     s.set(ptr);
     None

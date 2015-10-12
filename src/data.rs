@@ -13,8 +13,14 @@ pub struct Bin<Left, Right> {
     pub right: Option<Box<Right>>,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Num {
+    pub neg: u64,
+    pub num: i64
+}
+
 #[derive(Debug)]
-pub struct Factor (pub Bin<i64, Factor>);
+pub struct Factor (pub Bin<Num, Factor>);
 
 #[derive(Debug)]
 pub enum Term {
@@ -24,7 +30,7 @@ pub enum Term {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Token {
-    Number(i64),
+    Number(Num),
     Plus,
     Minus,
     Mul,
@@ -48,12 +54,17 @@ impl<T: Copy> TwoWay<T> {
     pub fn pos(&self) -> usize { self.ptr }
 }
 
+impl Num {
+    pub fn calc(&self) -> i64 {
+        if self.neg % 2 == 1 { - self.num } else { self.num }
+    }
+}
 
 impl Factor {
     pub fn calc(&self) -> i64 {
         match self.0.right.as_ref() {
-            Some(x) => self.0.left * x.calc(),
-            None => self.0.left
+            Some(x) => self.0.left.calc() * x.calc(),
+            None => self.0.left.calc()
         }
     }
 }
@@ -66,6 +77,26 @@ impl Term {
             Term::Plus(Bin {left: ref l, right: None }) |
             Term::Minus(Bin {left: ref l, right: None }) => l.calc()
         }
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        write!(f, "{}", match *self {
+            Token::Number(ref n) => n.to_string(),
+            Token::Plus => '+'.to_string(),
+            Token::Minus => '-'.to_string(),
+            Token::Mul => '*'.to_string(),
+        })
+    }
+}
+
+impl Display for Num {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        for _ in (0 .. self.neg) {
+            try!(write!(f, "-"))
+        }
+        write!(f, "{}", self.num)
     }
 }
 

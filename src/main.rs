@@ -20,7 +20,7 @@ fn main() {
                     x
                 } else {
                     line.clear();
-                    println!("Unexpected {:?}", s.read());
+                    println!("Unexpected {}", s.read().as_ref().map(ToString::to_string).as_ref().map(std::ops::Deref::deref).unwrap_or("EOF"));
                     continue
                 };
                 println!("{} = {}", x, x.calc());
